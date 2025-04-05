@@ -14,13 +14,11 @@ struct Block {
     Block(int id, string data, bool isDummy) : id(id), data(data), isDummy(isDummy) {}
 };
 
-// Node in the ORAM tree
-struct TreeNode {
-    vector<Block> bucket;
+struct TreeNode {  
+    vector<Block> bucket; // one node can have multiple blocks
 };
 
-// ORAM Tree
-class ORAMTree {
+class ORAMTree {   // data tree in the paper
 private:
     unordered_map<int, TreeNode> tree;
     int depth;
