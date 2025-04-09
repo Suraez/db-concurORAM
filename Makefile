@@ -1,5 +1,6 @@
 all:
-	g++ -std=c++17 -o main main.cpp && ./main
+	g++ *.cpp -o concuroram -std=c++17 -pthread
+	./concuroram
 
 clean:
 	rm -f main
