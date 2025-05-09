@@ -21,3 +21,4 @@ clean:
 	rm -rf .idea
 	rm -rf .vscode
 	rm -rf .DS_Store
+	rm concuroram
