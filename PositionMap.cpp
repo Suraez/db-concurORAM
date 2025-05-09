@@ -9,5 +9,5 @@ void PositionMap::updatePosition(int blockId, int path) {
 int PositionMap::getPosition(int blockId) const {
     std::shared_lock lock(posMutex);
     auto it = positionMap.find(blockId);
-    return (it != positionMap.end()) ? it->second : -1;
+    return (it != positionMap.end()) ? it->second : -1; // it->second is the path
 }

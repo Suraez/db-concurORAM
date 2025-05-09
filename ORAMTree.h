@@ -14,4 +14,5 @@ public:
     void initializeTree();
     void addBlock(int index, const Block& block);
     TreeNode getNode(int index);
+    std::vector<int> getPathIndices(int leafId);
 };
