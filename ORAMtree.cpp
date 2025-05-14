@@ -39,3 +39,8 @@ std::vector<int> ORAMTree::getPathIndices(int leafId) {
     std::reverse(path.begin(), path.end()); // from root to leaf
     return path;
 }
+
+
+int ORAMTree::getDepth() const {
+    return depth;
+}
