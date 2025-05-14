@@ -9,7 +9,7 @@
 #include "ORAMTree.h" // class ORAMTree defined in this file
 #include "Stash.h" // class Stash defined in this file
 #include "PositionMap.h" // class PositionMap defined in this file
-
+#include "DRLogSet.h" // class DRLogSet defined in this file
 using namespace std;
 
 
@@ -21,56 +21,61 @@ private:
     ORAMTree& tree;
     PositionMap& positionMap;
     Stash& stash;
+    DRLogSet& drLogSet;  // 🔄 Inject DRLogSet
 
 public:
-    ORAMQuery(ORAMTree& tree, PositionMap& positionMap, Stash& stash) 
-        : tree(tree), positionMap(positionMap), stash(stash) {}
+    ORAMQuery(ORAMTree& tree, PositionMap& positionMap, Stash& stash, DRLogSet& drLogSet)
+        : tree(tree), positionMap(positionMap), stash(stash), drLogSet(drLogSet) {}
 
-
-    // ORAMQuery first tries to find the path where the block is stored using the position map.
-    // If the block is not found in the PositionMap, it returns the dummy block.
-
-
-    // if the block is found in the position map, it fetches the block from the stash.
-    std::vector<Block> read(int blockId) {
+    // Main PathORAM-style Read Operation
+    Block read(int blockId) {
         int leafId = positionMap.getPosition(blockId);
-        if (leafId == -1) return { Block(-1, "", true) };
-    
+        if (leafId == -1) {
+            Block dummy(-1, "", true);
+            drLogSet.appendToCurrent(dummy);
+            return dummy;
+        }
+
         std::vector<int> pathIndices = tree.getPathIndices(leafId);
-        std::vector<Block> pathBlocks;
-    
+
+        // Step 1: Read all blocks from the path into the stash
         for (int idx : pathIndices) {
             TreeNode node = tree.getNode(idx);
             for (const Block& b : node.bucket) {
                 stash.addBlock(b);
-                pathBlocks.push_back(b);
             }
         }
-    
-        // Optionally remap the block ID and update position map here.
-    
-        return pathBlocks;  // return all blocks read along the path
+
+        // Step 2: Try to fetch the target block from the stash
+        Block result = stash.fetchBlock(blockId);
+        if (result.id == -1) {
+            result = Block(-1, "", true); // If not found, return dummy
+        }
+
+        // Step 3: Append the fetched block (real or dummy) to the DR-LogSet
+        drLogSet.appendToCurrent(result);
+
+        return result;
     }
-    
-    
 };
 
 int main() {
-    int depth = 2; // binary tree of depth 1 → 2 leaves, 3 nodes
+    int depth = 2; 
     ORAMTree tree(depth);
     PositionMap positionMap;
     Stash stash;
-    ORAMQuery oramQuery(tree, positionMap, stash);
+    DRLogSet drl(2); // Assume max 2 parallel queries per round
+    ORAMQuery oramQuery(tree, positionMap, stash, drl);
 
-    cout << "Adding blocks" << endl;
 
     Block block1(0, "Block in root", false);
-    Block block2(1, "Block in left leaf", false);
-    Block block3(2, "Block in right leaf", false);
+    Block block2(1, "Block in leftmost leaf at depth 1", false);
+    Block block3(2, "Block in rightmost leaf at depth 1", false);
     Block block4(3, "leftmost block at depth 2", false);
-    Block block5(4, "leftmost  + 1 block at depth 2", false);
+    Block block5(4, "leftmost + 1 block at depth 2", false);
     Block block6(5, "d2 p2", false);
     Block block7(6, "d2 rightmost", false);
+
     tree.addBlock(0, block1); 
     tree.addBlock(1, block2);
     tree.addBlock(2, block3);
@@ -78,17 +83,23 @@ int main() {
     tree.addBlock(4, block5);
     tree.addBlock(5, block6);
     tree.addBlock(6, block7);
+
+    // Assign paths (leaf IDs) to each block
     positionMap.updatePosition(3, 0);
     positionMap.updatePosition(4, 1);
     positionMap.updatePosition(5, 2); 
     positionMap.updatePosition(6, 3);
-    std::vector<Block> fetchedBlocks = oramQuery.read(1); 
 
-    cout << "\nFetched blocks on path to leaf 1:\n";
-    for (const Block& b : fetchedBlocks) {
-        cout << "  Block ID: " << b.id << ", Data: " << b.data 
-        << ", Is Dummy: " << (b.isDummy ? "true" : "false") << endl;
-    }
+    // Fetch block with ID 5 (assigned to path 2)
+    Block fetchedBlock = oramQuery.read(6); 
+
+    cout << "\nFetched block:\n";
+    cout << "  Block ID: " << fetchedBlock.id
+         << ", Data: " << fetchedBlock.data
+         << ", Is Dummy: " << (fetchedBlock.isDummy ? "true" : "false") << endl;
+
+    // Optionally finalize the DRL (after 2 queries for example)
+    drl.finalizeRound();
 
     return 0;
 }
