@@ -144,7 +144,7 @@ int main()
 
     std::thread t1(clientQuery, 1, 6, tree, positionMap, stash, drl, qlog);
     std::this_thread::sleep_for(std::chrono::milliseconds(10)); // slight delay
-    std::thread t2(clientQuery, 2, 3, tree, positionMap, stash, drl, qlog);
+    std::thread t2(clientQuery, 2, 6, tree, positionMap, stash, drl, qlog);
 
     t1.join();
     t2.join();

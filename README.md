@@ -34,3 +34,9 @@ in the above example, the thread is supposed to run the clientQuery
 
 _Tip_:
 For the preview of markdown, hit the `ctrl+shift+v` in the VSCODE
+
+
+
+__ALGORITHMS__
+
+1. readLogSet(id) is implemented in DRLogSet.cpp
