@@ -56,7 +56,7 @@ public:
 };
 
 int main() {
-    int depth = 1; // binary tree of depth 1 → 2 leaves, 3 nodes
+    int depth = 2; // binary tree of depth 1 → 2 leaves, 3 nodes
     ORAMTree tree(depth);
     PositionMap positionMap;
     Stash stash;
@@ -64,26 +64,30 @@ int main() {
 
     cout << "Adding blocks" << endl;
 
-    // Add two blocks to the rightmost path (path ID 1, which is root [0] -> right child [2])
-    Block block1(1, "Block in root", false);
-    Block block2(2, "Block in left leaf", false);
-    Block block3(3, "Block in right leaf", false);
+    Block block1(0, "Block in root", false);
+    Block block2(1, "Block in left leaf", false);
+    Block block3(2, "Block in right leaf", false);
+    Block block4(3, "leftmost block at depth 2", false);
+    Block block5(4, "leftmost  + 1 block at depth 2", false);
+    Block block6(5, "d2 p2", false);
+    Block block7(6, "d2 rightmost", false);
     tree.addBlock(0, block1); 
-    tree.addBlock(1, block2);// Add to root
-    tree.addBlock(2, block3); // Add to right leaf (index 2)
-
-    // Both blocks are assigned to path ID 1 (rightmost path)
-    positionMap.updatePosition(1, 1);
-    positionMap.updatePosition(2, 1);
-
-    // Now query block 1 (will fetch root → right leaf = path ID 1)
-    std::vector<Block> fetchedBlocks = oramQuery.read(2); // blockId = 1, assigned to path 1
+    tree.addBlock(1, block2);
+    tree.addBlock(2, block3);
+    tree.addBlock(3, block4);
+    tree.addBlock(4, block5);
+    tree.addBlock(5, block6);
+    tree.addBlock(6, block7);
+    positionMap.updatePosition(3, 0);
+    positionMap.updatePosition(4, 1);
+    positionMap.updatePosition(5, 2); 
+    positionMap.updatePosition(6, 3);
+    std::vector<Block> fetchedBlocks = oramQuery.read(1); 
 
     cout << "\nFetched blocks on path to leaf 1:\n";
     for (const Block& b : fetchedBlocks) {
-        cout << "  Block ID: " << b.id 
-             << ", Data: " << b.data 
-             << ", Is Dummy: " << (b.isDummy ? "true" : "false") << endl;
+        cout << "  Block ID: " << b.id << ", Data: " << b.data 
+        << ", Is Dummy: " << (b.isDummy ? "true" : "false") << endl;
     }
 
     return 0;
