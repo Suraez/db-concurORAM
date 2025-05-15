@@ -21,7 +21,7 @@ void ORAMTree::addBlock(int index, const Block& block) {
     tree[index].bucket.push_back(block);
 }
 
-TreeNode ORAMTree::getNode(int index) {
+TreeNode ORAMTree::getNode(int index) const {
     std::shared_lock lock(treeMutex);
     return tree.at(index);
 }

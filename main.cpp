@@ -20,6 +20,8 @@
 #include <memory>
 #include <algorithm>
 #include <random>
+#include <cmath>
+#include <iomanip>
 
 
 using namespace std;
@@ -117,6 +119,32 @@ void clientQuery(int clientId, int blockId,
               << ", Dummy = " << (result.isDummy ? "true" : "false") << std::endl;
 }
 
+void printAsciiTree(const ORAMTree& tree, int depth) {
+    int totalNodes = (1 << (depth + 1)) - 1;
+    int level = 0;
+    int nodesPrinted = 0;
+
+    std::cout << "\n[ORAMTree ASCII Representation]\n";
+
+    while (nodesPrinted < totalNodes) {
+        int nodesInLevel = 1 << level;
+        int spacing = (1 << (depth - level + 1)); // controls horizontal spacing
+
+        // Print each node at this level
+        for (int i = 0; i < nodesInLevel && nodesPrinted < totalNodes; ++i, ++nodesPrinted) {
+            TreeNode node = tree.getNode(nodesPrinted);
+            std::cout << std::setw(spacing) << "[";
+            for (const Block& b : node.bucket) {
+                std::cout << b.id << (b.isDummy ? "d" : "") << " ";
+            }
+            std::cout << "]" << std::setw(spacing);
+        }
+
+        std::cout << "\n";
+        level++;
+    }
+}
+
 int main()
 {
     int depth = 2;
@@ -151,5 +179,7 @@ int main()
     t2.join();
 
     drl->finalizeRound();
+    printAsciiTree(*tree, depth);
+
     return 0;
 }

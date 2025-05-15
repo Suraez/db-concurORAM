@@ -13,7 +13,7 @@ public:
     explicit ORAMTree(int depth);
     void initializeTree();
     void addBlock(int index, const Block& block);
-    TreeNode getNode(int index);
+    TreeNode getNode(int index) const;
     std::vector<int> getPathIndices(int leafId);
     int getDepth() const;
 
