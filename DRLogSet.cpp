@@ -1,10 +1,13 @@
 #include "DRLogSet.h"
+#include <iostream>
 
 DRLogSet::DRLogSet(int c) : c(c) {}
 
 void DRLogSet::appendToCurrent(const Block& b) {
     currentDRL.push_back(b);
 }
+
+// Algorithm 1
 
 std::vector<Block> DRLogSet::readLogSet(int blockId) {  // 1st algorithm
     std::vector<Block> result;
@@ -33,11 +36,10 @@ std::vector<Block> DRLogSet::readLogSet(int blockId) {  // 1st algorithm
         {
             if (b.id == blockId && std::find(index.begin(), index.end(), blockId) != index.end())
             {
-                // 🔍 Check if also in DRL → Case 2
                 if (blockInCurrentDRL)
                 {
-                    // Sectoin V.A if hte block is in the current DRL and in the bigentry log, then reurn
-                    // dummy block
+                    // Sectoin V.A if hte block is in the current DRL and in the bigentry log, then 
+                    // dummy block is returned as requests are overlapped for the second client
                     result.emplace_back(-1, "", true);
                 }
                 else
@@ -89,4 +91,53 @@ void DRLogSet::finalizeRound() {
 
     searchIndices.push_back(index);
     currentDRL.clear();
+}
+
+// Algorithm 2
+
+void DRLogSet::writeLogSet(const Block& blk, int queryId) {
+
+    currentDRL.push_back(blk); // appending the block to the current DRL
+
+    // Step 2: Reshuffle the log li if it exists
+    if (queryId < static_cast<int>(bigentryLogs.size())) {
+        std::vector<Block>& log = bigentryLogs[queryId];  // reading the log li
+
+        std::random_device rd; // seed
+        std::mt19937 g(rd()); // random number generator with the seed rd
+        std::shuffle(log.begin(), log.end(), g); // shuffling the log li
+
+        // Optional: Print reshuffle action
+        std::cout << "[Client " << queryId << "] Reshuffled bigentry log li\n";
+    }
+
+    // Step 3: Finalize round if this is the last client (queryId == c - 1)
+    if (queryId == c - 1) {
+        std::vector<Block> log = currentDRL;
+
+        // Add c dummy blocks
+        for (int i = 0; i < c; ++i) {
+            log.emplace_back(-1, "", true);
+        }
+
+        // Shuffle combined log
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(log.begin(), log.end(), g);
+
+        bigentryLogs.push_back(log);
+
+        // Build search index
+        std::vector<int> index;
+        for (const auto& b : currentDRL) {
+            if (!b.isDummy) {
+                index.push_back(b.id);
+            }
+        }
+
+        searchIndices.push_back(index);
+        currentDRL.clear();
+
+        std::cout << "[DRL] Finalized query round and created new bigentry log.\n";
+    }
 }

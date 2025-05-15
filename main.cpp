@@ -75,7 +75,7 @@ public:
             if (leafId == -1)
             {
                 Block dummy(-1, "", true);
-                drLogSet.appendToCurrent(dummy);
+                drLogSet.writeLogSet(dummy, queryId);
                 return dummy;
             }
     
@@ -93,7 +93,8 @@ public:
             if (result.id == -1)
                 result = Block(-1, "", true);
     
-            drLogSet.appendToCurrent(result);
+            drLogSet.writeLogSet(result, queryId);
+
             return result;
         }
 
@@ -123,7 +124,7 @@ int main()
     auto tree = std::make_shared<ORAMTree>(depth);
     auto positionMap = std::make_shared<PositionMap>();
     auto stash = std::make_shared<Stash>();
-    auto drl = std::make_shared<DRLogSet>(2); // round size
+    auto drl = std::make_shared<DRLogSet>(2); // max number of concurrent queries = 2
     auto qlog = std::make_shared<QueryLog>();
 
     // Add blocks
@@ -144,7 +145,7 @@ int main()
 
     std::thread t1(clientQuery, 1, 6, tree, positionMap, stash, drl, qlog);
     std::this_thread::sleep_for(std::chrono::milliseconds(10)); // slight delay
-    std::thread t2(clientQuery, 2, 6, tree, positionMap, stash, drl, qlog);
+    std::thread t2(clientQuery, 2, 3, tree, positionMap, stash, drl, qlog);
 
     t1.join();
     t2.join();
