@@ -141,3 +141,18 @@ void DRLogSet::writeLogSet(const Block& blk, int queryId) {
         std::cout << "[DRL] Finalized query round and created new bigentry log.\n";
     }
 }
+
+
+void DRLogSet::printCurrentDRL() const {
+    std::cout << "\n[Current DR-LogSet Contents]\n";
+    if (currentDRL.empty()) {
+        std::cout << "(Empty)\n";
+        return;
+    }
+
+    for (const auto& b : currentDRL) {
+        std::cout << "  [ID: " << b.id
+        << ", Data: " << b.data
+        << ", Dummy: " << (b.isDummy ? "true" : "false") << "]\n";
+    }
+}

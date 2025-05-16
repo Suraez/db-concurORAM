@@ -23,5 +23,6 @@ public:
 
     void finalizeRound(); // Called after c queries
     void writeLogSet(const Block& blk, int queryId);
+    void printCurrentDRL() const;
 
 };
