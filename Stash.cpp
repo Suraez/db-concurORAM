@@ -1,5 +1,7 @@
 #include "Stash.h"
 #include <mutex>  // Required for std::unique_lock and std::shared_mutex
+#include <random>
+#include <algorithm>
 
 void Stash::addBlock(const Block& block) {
     std::unique_lock lock(stashMutex);
@@ -34,4 +36,12 @@ void Stash::clear() {
 std::vector<Block> Stash::getAllBlocks() const {
     std::shared_lock lock(stashMutex);
     return stash; // Return a copy
+}
+
+
+void Stash::reshuffle() {
+    std::unique_lock lock(stashMutex);
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(stash.begin(), stash.end(), g);
 }

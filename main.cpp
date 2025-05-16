@@ -13,6 +13,8 @@
 #include "PositionMap.h" // class PositionMap defined in this file
 #include "DRLogSet.h" // class DRLogSet defined in this file
 #include "QueryLog.h"
+#include "StashSet.h" // class StashSet defined in this file
+
 
 // parallel header files
 #include <thread>
@@ -105,11 +107,11 @@ public:
 };
 
 void clientQuery(int clientId, int blockId,
-                std::shared_ptr<ORAMTree> tree,
-                std::shared_ptr<PositionMap> positionMap,
-                std::shared_ptr<Stash> stash,
-                std::shared_ptr<DRLogSet> drl,
-                std::shared_ptr<QueryLog> qlog)
+            std::shared_ptr<ORAMTree> tree,
+            std::shared_ptr<PositionMap> positionMap,
+            std::shared_ptr<Stash> stash,
+            std::shared_ptr<DRLogSet> drl,
+            std::shared_ptr<QueryLog> qlog)
 {
     ORAMQuery query(*tree, *positionMap, *stash, *drl, *qlog);
     Block result = query.read(blockId);
@@ -119,6 +121,8 @@ void clientQuery(int clientId, int blockId,
               << ", Dummy = " << (result.isDummy ? "true" : "false") << std::endl;
 }
 
+
+// utility function to print the ORAM tree in ASCII format
 void printAsciiTree(const ORAMTree& tree, int depth) {
     int totalNodes = (1 << (depth + 1)) - 1;
     int level = 0;
@@ -142,6 +146,25 @@ void printAsciiTree(const ORAMTree& tree, int depth) {
 
         std::cout << "\n";
         level++;
+    }
+}
+
+
+// utility function to print stash contents
+
+void printStashNamed(const Stash& stash, const std::string& name) {
+    std::vector<Block> blocks = stash.getAllBlocks();
+
+    std::cout << "\n[" << name << "]\n";
+    if (blocks.empty()) {
+        std::cout << "(Empty)\n";
+        return;
+    }
+
+    for (const Block& b : blocks) {
+        std::cout << "  [ID: " << b.id
+                  << ", Data: " << b.data
+                  << ", Dummy: " << (b.isDummy ? "true" : "false") << "]\n";
     }
 }
 
@@ -179,7 +202,27 @@ int main()
     t2.join();
 
     drl->finalizeRound();
-    printAsciiTree(*tree, depth);
+
+    // printAsciiTree(*tree, depth);
+
+    // Create and populate a StashSet
+    StashSet stashSet(3);
+    stashSet.addBlockToStash(0, Block(1, "A", false));
+    stashSet.addBlockToStash(0, Block(2, "B", false));
+    stashSet.addBlockToStash(1, Block(3, "C", false));
+
+    // Print before shuffle
+    for (int i = 0; i < 3; ++i) {
+        printStashNamed(stashSet.getStash(i), "Stash " + std::to_string(i) + " BEFORE shuffle");
+    }
+
+    // Shuffle stash 0
+    stashSet.getStash(0).reshuffle();
+
+    // Print after shuffle
+    for (int i = 0; i < 3; ++i) {
+        printStashNamed(stashSet.getStash(i), "Stash " + std::to_string(i) + " AFTER shuffle");
+    }
 
     return 0;
 }

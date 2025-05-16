@@ -15,4 +15,5 @@ public:
     bool contains(int id) const;
     void clear();
     std::vector<Block> getAllBlocks() const;
+    void reshuffle();
 };
