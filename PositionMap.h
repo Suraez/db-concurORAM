@@ -11,4 +11,6 @@ private:
 public:
     void updatePosition(int blockId, int path);
     int getPosition(int blockId) const;
+    void printMap() const;
+
 };

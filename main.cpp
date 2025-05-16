@@ -123,7 +123,7 @@ void clientQuery(int clientId, int blockId,
 
 
 // utility function to print the ORAM tree in ASCII format
-void printAsciiTree(const ORAMTree& tree, int depth) {
+void displayORAMtree(const ORAMTree& tree, int depth) {
     int totalNodes = (1 << (depth + 1)) - 1;
     int level = 0;
     int nodesPrinted = 0;
@@ -203,26 +203,35 @@ int main()
 
     drl->finalizeRound();
 
-    // printAsciiTree(*tree, depth);
+    displayORAMtree(*tree, depth);
+
+
+
+    // **** Stashset Printing ****
 
     // Create and populate a StashSet
-    StashSet stashSet(3);
-    stashSet.addBlockToStash(0, Block(1, "A", false));
-    stashSet.addBlockToStash(0, Block(2, "B", false));
-    stashSet.addBlockToStash(1, Block(3, "C", false));
+    // StashSet stashSet(3);
+    // stashSet.addBlockToStash(0, Block(1, "A", false));
+    // stashSet.addBlockToStash(0, Block(2, "B", false));
+    // stashSet.addBlockToStash(1, Block(3, "C", false));
 
-    // Print before shuffle
-    for (int i = 0; i < 3; ++i) {
-        printStashNamed(stashSet.getStash(i), "Stash " + std::to_string(i) + " BEFORE shuffle");
-    }
+    // // Print before shuffle
+    // for (int i = 0; i < 3; ++i) {
+    //     printStashNamed(stashSet.getStash(i), "Stash " + std::to_string(i) + " BEFORE shuffle");
+    // }
 
-    // Shuffle stash 0
-    stashSet.getStash(0).reshuffle();
+    // // Shuffle stash 0
+    // stashSet.getStash(0).reshuffle();
 
-    // Print after shuffle
-    for (int i = 0; i < 3; ++i) {
-        printStashNamed(stashSet.getStash(i), "Stash " + std::to_string(i) + " AFTER shuffle");
-    }
+    // // Print after shuffle
+    // for (int i = 0; i < 3; ++i) {
+    //     printStashNamed(stashSet.getStash(i), "Stash " + std::to_string(i) + " AFTER shuffle");
+    // }
+
+    // ** PositionMap Printing ***
+
+    positionMap->printMap();
+
 
     return 0;
 }
