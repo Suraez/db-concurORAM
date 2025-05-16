@@ -114,11 +114,18 @@ void clientQuery(int clientId, int blockId,
             std::shared_ptr<QueryLog> qlog)
 {
     ORAMQuery query(*tree, *positionMap, *stash, *drl, *qlog);
+    auto start = std::chrono::high_resolution_clock::now();
     Block result = query.read(blockId);
+    auto end = std::chrono::high_resolution_clock::now();
 
-    std::cout << "[Client " << clientId << "] Fetched block: ID = " << result.id
-              << ", Data = " << result.data
-              << ", Dummy = " << (result.isDummy ? "true" : "false") << std::endl;
+    std::chrono::duration<double, std::milli> latency = end - start;
+
+    std::cout << "Read Result: [ID: " << result.id
+    << ", Data: " << result.data
+    << ", Dummy: " << (result.isDummy ? "true" : "false") << "]\n";
+
+    std::cout << "Fetch Latency: " << latency.count() << " ms\n";
+
 }
 
 
@@ -199,6 +206,94 @@ int computePathID(int nodeIndex, int depth) {
 
 
 
+void interactiveMenu(std::shared_ptr<ORAMTree> tree,
+                     std::shared_ptr<PositionMap> positionMap,
+                     std::shared_ptr<Stash> stash,
+                     std::shared_ptr<DRLogSet> drl,
+                     std::shared_ptr<QueryLog> qlog,
+                     int depth) {
+    while (true) {
+        std::cout << "\n==== Interactive Menu ====\n";
+        std::cout << "1. Read a block from the ORAMTree\n";
+        std::cout << "2. Write a block to the ORAMTree\n";
+        std::cout << "3. Display ORAMTree\n";
+        std::cout << "4. Display contents of Stash\n";
+        std::cout << "5. Display contents of PositionMap\n";
+        std::cout << "6. Display contents of QueryLog\n";
+        std::cout << "7. Display contents of DRLogSet (Current Round)\n";
+        std::cout << "8. Exit the program\n";
+        std::cout << "Select an option: ";
+
+        int choice;
+        std::cin >> choice;
+
+        if (choice == 1) {
+            int blockId;
+            std::cout << "Enter Block ID to read: ";
+            std::cin >> blockId;
+
+            auto start = std::chrono::high_resolution_clock::now();
+            clientQuery(1, blockId, tree, positionMap, stash, drl, qlog);
+            auto end = std::chrono::high_resolution_clock::now();
+
+            std::chrono::duration<double, std::milli> latency = end - start;
+            std::cout << "Fetch Latency: " << latency.count() << " ms\n";
+
+            int leafId = positionMap->getPosition(blockId);
+            std::vector<int> path = tree->getPathIndices(leafId);
+            std::cout << "Queried Path (Root to Leaf): ";
+            for (int idx : path) std::cout << idx << " ";
+            std::cout << "\n";
+
+        } else if (choice == 2) {
+            int blockId, nodeIndex;
+            std::string data;
+
+            std::cout << "Enter Block ID: ";
+            std::cin >> blockId;
+
+            std::cin.ignore(); // flush newline
+            std::cout << "Enter Block Data: ";
+            std::getline(std::cin, data);
+
+            std::cout << "Enter Tree Node Index (0 to " << ((1 << (depth + 1)) - 2) << "): ";
+            std::cin >> nodeIndex;
+
+            int pathId = (nodeIndex >= (1 << depth) - 1) ? (nodeIndex - ((1 << depth) - 1)) : -1;
+            if (pathId < 0 || pathId >= (1 << depth)) {
+                std::cerr << "Error: Invalid leaf node index.\n";
+                continue;
+            }
+
+            tree->addBlock(nodeIndex, Block(blockId, data, false));
+            positionMap->updatePosition(blockId, pathId);
+            std::cout << "Block inserted and mapped to path ID " << pathId << ".\n";
+
+        } else if (choice == 3) {
+            displayORAMtree(*tree, depth);
+
+        } else if (choice == 4) {
+            printStashNamed(*stash, "Stash Contents");
+
+        } else if (choice == 5) {
+            positionMap->printMap();
+
+        } else if (choice == 6) {
+            qlog->printLog();
+
+        } else if (choice == 7) {
+            drl->printCurrentDRL();
+
+        } else if (choice == 8) {
+            std::cout << "Exiting the program...\n";
+            break;
+
+        } else {
+            std::cout << "Invalid choice. Try again.\n";
+        }
+    }
+}
+
 
 int main()
 {
@@ -225,70 +320,34 @@ int main()
 
     
 
-
-
-
     // === ORAM system setup ===
     auto tree = std::make_shared<ORAMTree>(depth);
     auto positionMap = std::make_shared<PositionMap>();
     auto stash = std::make_shared<Stash>();
     auto drl = std::make_shared<DRLogSet>(maxConcurrentQueries);
     auto qlog = std::make_shared<QueryLog>();
+    auto stashSet = std::make_shared<StashSet>(maxConcurrentQueries);
+
+
+    // displayORAMtree(*tree, depth);
 
 
     // defaultPopulate(tree);
     // defaultPositionMapPopulate(positionMap);
 
+    interactiveMenu(tree, positionMap, stash, drl, qlog, depth);
 
+    // std::thread t1(clientQuery, 1, 6, tree, positionMap, stash, drl, qlog);
+    // std::this_thread::sleep_for(std::chrono::milliseconds(10)); // slight delay
+    // std::thread t2(clientQuery, 2, 3, tree, positionMap, stash, drl, qlog);
 
-    std::cout << "\nHow many blocks do you want to insert into the tree? ";
-    std::cin >> numBlocks;
-
-    for (int i = 0; i < numBlocks; ++i) {
-        int blockId, nodeIndex, pathId;
-        std::string data;
-
-        std::cout << "\nBlock #" << i + 1 << "\n";
-
-        std::cout << "  Enter Block ID (int): ";
-        std::cin >> blockId;
-
-        std::cin.ignore(); // avoid newline issue
-        std::cout << "  Enter Block Data (string): ";
-        std::getline(std::cin, data);
-
-        std::cout << "  Enter Tree Node Index to insert this block: ";
-        std::cin >> nodeIndex;
-
-        pathId = computePathID(nodeIndex, depth);
-        if (pathId < 0 || pathId >= (1 << depth)) {
-            std::cerr << "  Invalid node index: does not map to a valid leaf.\n";
-            continue;  // skip this block
-        } else {
-            std::cout << "Block ID " << blockId << "mapped to path ID = " << pathId << "\n";
-        }
-
-
-        tree->addBlock(nodeIndex, Block(blockId, data, false));
-        positionMap->updatePosition(blockId, pathId);
-    }
-
-    
-
-    std::thread t1(clientQuery, 1, 6, tree, positionMap, stash, drl, qlog);
-    std::this_thread::sleep_for(std::chrono::milliseconds(10)); // slight delay
-    std::thread t2(clientQuery, 2, 3, tree, positionMap, stash, drl, qlog);
-
-    t1.join();
-    t2.join();
+    // t1.join();
+    // t2.join();
 
     drl->finalizeRound();
 
-    displayORAMtree(*tree, depth);
+    
 
-
-
-    // **** Stashset Printing ****
 
     // Create and populate a StashSet
     // StashSet stashSet(3);
@@ -309,9 +368,8 @@ int main()
     //     printStashNamed(stashSet.getStash(i), "Stash " + std::to_string(i) + " AFTER shuffle");
     // }
 
-    // ** PositionMap Printing ***
-
-    positionMap->printMap();
+    // // ** PositionMap Printing ***
+    // positionMap->printMap();
 
 
     return 0;
