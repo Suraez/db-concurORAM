@@ -168,17 +168,9 @@ void printStashNamed(const Stash& stash, const std::string& name) {
     }
 }
 
-int main()
-{
-    int depth = 2;
 
-    auto tree = std::make_shared<ORAMTree>(depth);
-    auto positionMap = std::make_shared<PositionMap>();
-    auto stash = std::make_shared<Stash>();
-    auto drl = std::make_shared<DRLogSet>(2); // max number of concurrent queries = 2
-    auto qlog = std::make_shared<QueryLog>();
-
-    // Add blocks
+// utility function to populate the ORAM tree with default blocks
+void defaultPopulate(std::shared_ptr<ORAMTree> tree) {
     tree->addBlock(0, Block(0, "Block in root", false));
     tree->addBlock(1, Block(1, "Block in leftmost leaf at depth 1", false));
     tree->addBlock(2, Block(2, "Block in rightmost leaf at depth 1", false));
@@ -186,13 +178,102 @@ int main()
     tree->addBlock(4, Block(4, "leftmost + 1 block at depth 2", false));
     tree->addBlock(5, Block(5, "d2 p2", false));
     tree->addBlock(6, Block(6, "d2 rightmost", false));
+}
 
-
-    // Initialize position map
+// utility function to populate the PositionMap with default values
+void defaultPositionMapPopulate(std::shared_ptr<PositionMap> positionMap) {
     positionMap->updatePosition(3, 0);
     positionMap->updatePosition(4, 1);
     positionMap->updatePosition(5, 2); 
     positionMap->updatePosition(6, 3);
+}
+
+int computePathID(int nodeIndex, int depth) {
+    int leafStartIndex = (1 << depth) - 1;
+    if (nodeIndex < leafStartIndex) {
+        std::cerr << "Error: Node index " << nodeIndex << " is not a leaf.\n";
+        return -1; // invalid
+    }
+    return nodeIndex - leafStartIndex;
+}
+
+
+
+
+int main()
+{
+    // === Tree Initialization ===
+    int depth;
+    int maxConcurrentQueries;
+    int numBlocks;
+
+    std::cout << "Enter the depth of the ORAM tree (e.g., 2): ";
+    std::cin >> depth;
+
+    std::cout << "Enter the max number of concurrent queries per round (c): ";
+    std::cin >> maxConcurrentQueries;
+
+    // Basic input validation
+    if (depth < 1 || maxConcurrentQueries < 1) {
+        std::cerr << "Error: Depth and c must both be >= 1.\n";
+        return 1;
+    }
+
+    std::cout << "\nInitialized ORAM tree with depth " << depth
+    << " (total nodes: " << ((1 << (depth + 1)) - 1)
+    << "), and max " << maxConcurrentQueries << " concurrent queries.\n";
+
+    
+
+
+
+
+    // === ORAM system setup ===
+    auto tree = std::make_shared<ORAMTree>(depth);
+    auto positionMap = std::make_shared<PositionMap>();
+    auto stash = std::make_shared<Stash>();
+    auto drl = std::make_shared<DRLogSet>(maxConcurrentQueries);
+    auto qlog = std::make_shared<QueryLog>();
+
+
+    // defaultPopulate(tree);
+    // defaultPositionMapPopulate(positionMap);
+
+
+
+    std::cout << "\nHow many blocks do you want to insert into the tree? ";
+    std::cin >> numBlocks;
+
+    for (int i = 0; i < numBlocks; ++i) {
+        int blockId, nodeIndex, pathId;
+        std::string data;
+
+        std::cout << "\nBlock #" << i + 1 << "\n";
+
+        std::cout << "  Enter Block ID (int): ";
+        std::cin >> blockId;
+
+        std::cin.ignore(); // avoid newline issue
+        std::cout << "  Enter Block Data (string): ";
+        std::getline(std::cin, data);
+
+        std::cout << "  Enter Tree Node Index to insert this block: ";
+        std::cin >> nodeIndex;
+
+        pathId = computePathID(nodeIndex, depth);
+        if (pathId < 0 || pathId >= (1 << depth)) {
+            std::cerr << "  Invalid node index: does not map to a valid leaf.\n";
+            continue;  // skip this block
+        } else {
+            std::cout << "Block ID " << blockId << "mapped to path ID = " << pathId << "\n";
+        }
+
+
+        tree->addBlock(nodeIndex, Block(blockId, data, false));
+        positionMap->updatePosition(blockId, pathId);
+    }
+
+    
 
     std::thread t1(clientQuery, 1, 6, tree, positionMap, stash, drl, qlog);
     std::this_thread::sleep_for(std::chrono::milliseconds(10)); // slight delay
