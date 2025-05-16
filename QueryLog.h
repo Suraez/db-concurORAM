@@ -6,7 +6,8 @@
 class QueryLog {
 private:
     std::vector<int> log;
-    std::mutex logMutex;
+    mutable std::mutex logMutex;
+
 
 public:
     // Register a block ID, return index (query ID), and overlap status
@@ -16,5 +17,8 @@ public:
     void clear();
 
     size_t size();
+
+    void printLog() const;
+
 
 };

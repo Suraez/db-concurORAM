@@ -1,5 +1,7 @@
 #include "QueryLog.h"
 #include <algorithm>
+
+#include <iostream>
 std::pair<int, bool> QueryLog::registerQuery(int blockId) {
     std::lock_guard<std::mutex> lock(logMutex);
 
@@ -18,3 +20,18 @@ size_t QueryLog::size() {
     return log.size();
 }
 
+
+// Print the contents of the log
+void QueryLog::printLog() const {
+    std::lock_guard<std::mutex> lock(logMutex);
+
+    std::cout << "\n[QueryLog Contents]\n";
+    if (log.empty()) {
+        std::cout << "(Log is empty)\n";
+        return;
+    }
+
+    for (size_t i = 0; i < log.size(); ++i) {
+        std::cout << "  Query " << i << ": Block ID = " << log[i] << "\n";
+    }
+}
