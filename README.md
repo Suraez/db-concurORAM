@@ -1,5 +1,7 @@
-### A course project that tries to implement algorithms mentioned in the paper https://www.ndss-symposium.org/wp-content/uploads/2019/02/ndss2019_07B-2_Chakraborti_paper.pdf
+### A course project that tries to implement algorithms mentioned in the [paper](https://www.ndss-symposium.org/wp-content/uploads/2019/02/ndss2019_07B-2_Chakraborti_paper.pdf) 
 
+
+#### To run the project, please checkout readme.txt
 
 Bigentry Logs = shuffled, and randomized DRlogset
 
@@ -22,11 +24,11 @@ Obviliousness:
 
 __Code Explanation__
 
-#pragma once tells the compiler to include header files only once
+`#pragma once` tells the compiler to include header files only once
 std::shared_ptr helps to share global variables among the threads
 
 
-std::thread t2(clientQuery, 2, 3, tree, positionMap, stash, drl, qlog);
+`std::thread t2(clientQuery, 2, 3, tree, positionMap, stash, drl, qlog);`
 
 the above loc is similar to the pthread_create() which accepts an function argument that the thread should run, 
 
@@ -40,4 +42,17 @@ For the preview of markdown, hit the `ctrl+shift+v` in the VSCODE
 
 __ALGORITHMS__
 
-1. readLogSet(id) is implemented in DRLogSet.cpp
+1. readLogSet(id) (algortihm 1) is implemented in DRLogSet.cpp
+2. writeLogSet(blk, i) is also  implemented in DRLogSet.cpp
+3. readStashSet(id, i) is in StashSet.cpp
+
+
+__Implementation__
+
+1. Blocks can only be inserted in leaf nodes for simplicity.
+   
+
+
+## Results
+
+All the results are stored into the `outputs` folder.

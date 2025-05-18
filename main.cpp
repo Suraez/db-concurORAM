@@ -204,15 +204,15 @@ int computePathID(int nodeIndex, int depth) {
     return nodeIndex - leafStartIndex;
 }
 
-
-
 void interactiveMenu(std::shared_ptr<ORAMTree> tree,
                      std::shared_ptr<PositionMap> positionMap,
                      std::shared_ptr<Stash> stash,
                      std::shared_ptr<DRLogSet> drl,
                      std::shared_ptr<QueryLog> qlog,
-                     int depth) {
-    while (true) {
+                     int depth)
+{
+    while (true)
+    {
         std::cout << "\n==== Interactive Menu ====\n";
         std::cout << "1. Read a block from the ORAMTree\n";
         std::cout << "2. Write a block to the ORAMTree\n";
@@ -221,13 +221,15 @@ void interactiveMenu(std::shared_ptr<ORAMTree> tree,
         std::cout << "5. Display contents of PositionMap\n";
         std::cout << "6. Display contents of QueryLog\n";
         std::cout << "7. Display contents of DRLogSet (Current Round)\n";
-        std::cout << "8. Exit the program\n";
+        std::cout << "8. Simulate parallel block reads\n";
+        std::cout << "9. Exit the program\n";
         std::cout << "Select an option: ";
 
         int choice;
         std::cin >> choice;
 
-        if (choice == 1) {
+        if (choice == 1)
+        {
             int blockId;
             std::cout << "Enter Block ID to read: ";
             std::cin >> blockId;
@@ -242,10 +244,12 @@ void interactiveMenu(std::shared_ptr<ORAMTree> tree,
             int leafId = positionMap->getPosition(blockId);
             std::vector<int> path = tree->getPathIndices(leafId);
             std::cout << "Queried Path (Root to Leaf): ";
-            for (int idx : path) std::cout << idx << " ";
+            for (int idx : path)
+                std::cout << idx << " ";
             std::cout << "\n";
-
-        } else if (choice == 2) {
+        }
+        else if (choice == 2)
+        {
             int blockId, nodeIndex;
             std::string data;
 
@@ -260,7 +264,8 @@ void interactiveMenu(std::shared_ptr<ORAMTree> tree,
             std::cin >> nodeIndex;
 
             int pathId = (nodeIndex >= (1 << depth) - 1) ? (nodeIndex - ((1 << depth) - 1)) : -1;
-            if (pathId < 0 || pathId >= (1 << depth)) {
+            if (pathId < 0 || pathId >= (1 << depth))
+            {
                 std::cerr << "Error: Invalid leaf node index.\n";
                 continue;
             }
@@ -268,32 +273,65 @@ void interactiveMenu(std::shared_ptr<ORAMTree> tree,
             tree->addBlock(nodeIndex, Block(blockId, data, false));
             positionMap->updatePosition(blockId, pathId);
             std::cout << "Block inserted and mapped to path ID " << pathId << ".\n";
-
-        } else if (choice == 3) {
+        }
+        else if (choice == 3)
+        {
             displayORAMtree(*tree, depth);
-
-        } else if (choice == 4) {
+        }
+        else if (choice == 4)
+        {
             printStashNamed(*stash, "Stash Contents");
-
-        } else if (choice == 5) {
+        }
+        else if (choice == 5)
+        {
             positionMap->printMap();
-
-        } else if (choice == 6) {
+        }
+        else if (choice == 6)
+        {
             qlog->printLog();
-
-        } else if (choice == 7) {
+        }
+        else if (choice == 7)
+        {
             drl->printCurrentDRL();
+        }
+        else if (choice == 8)
+        {
+            int numThreads;
+            std::cout << "How many blocks (threads) do you want to read in parallel? ";
+            std::cin >> numThreads;
 
-        } else if (choice == 8) {
+            std::vector<int> blockIds(numThreads);
+            std::vector<std::thread> threads;
+
+            for (int i = 0; i < numThreads; ++i)
+            {
+                std::cout << "Enter Block ID for client " << i + 1 << ": ";
+                std::cin >> blockIds[i];
+            }
+
+            for (int i = 0; i < numThreads; ++i)
+            {
+                threads.emplace_back(clientQuery, i + 1, blockIds[i], tree, positionMap, stash, drl, qlog);
+            }
+
+            for (auto &t : threads)
+            {
+                t.join();
+            }
+        }
+        else if (choice == 9)
+        {
+            
             std::cout << "Exiting the program...\n";
             break;
+        }
 
-        } else {
+        else
+        {
             std::cout << "Invalid choice. Try again.\n";
         }
     }
 }
-
 
 int main()
 {
